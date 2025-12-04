@@ -6,18 +6,41 @@ let startX = 0;
 let startY = 0;
 let dragging = false;
 
-let uiFont;
-
-function preload() {
-  uiFont = loadFont("https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/assets/Roboto-Regular.ttf");
-}
+let uiFont = null;
+let fontLoaded = false;
 
 function setup() {
   createCanvas(800, 600, WEBGL);
-  
-  if (uiFont) {
-    textFont(uiFont);
-  }
+
+  // Try a local font first (place a .ttf in the project root named ui.ttf or in fonts/ui.ttf),
+  // then fall back to the CDN, then to the browser default.
+  const fontSources = [
+    "ui.ttf",
+    "fonts/ui.ttf",
+    "Roboto-VariableFont_wdth,wght.ttf",
+    "https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/assets/Roboto-Regular.ttf",
+  ];
+
+  const tryNextFont = () => {
+    const src = fontSources.shift();
+    if (!src) {
+      fontLoaded = true;
+      uiFont = null;
+      return;
+    }
+    loadFont(
+      src,
+      (font) => {
+        uiFont = font;
+        fontLoaded = true;
+      },
+      () => tryNextFont()
+    );
+  };
+
+  tryNextFont();
+
+  textFont("sans-serif");
 
   glasses.push({ x: 0, y: 0, z: 0, size: 200 });
   glasses.push({ x: 50, y: -30, z: 50, size: 180 });
@@ -44,7 +67,16 @@ function draw() {
   for (let i = 0; i < glasses.length; i++) {
     let g = glasses[i];
     push();
-@@ -53,50 +57,53 @@ function draw() {
+    translate(g.x, g.y, g.z);
+
+    if (selected === g) {
+      stroke(255, 100, 0, 200);
+      strokeWeight(3);
+    } else {
+      stroke(64, 224, 208, 150);
+      strokeWeight(1);
+    }
+
     fill(64, 224, 208, 60);
     box(g.size, 10, g.size);
     pop();
@@ -57,22 +89,24 @@ function draw() {
 function drawControls() {
   push();
 
-  // Reset transforms so 2D UI is unaffected by camera rotation
+  // Reset transforms so 2D UI is unaffected by camera rotation.
   resetMatrix();
 
-  // Move origin to top-left corner
+  // Move origin to top-left corner.
   translate(-width / 2, -height / 2);
 
-  // UI panel background
+  // Draw UI without depth testing so it always shows above the 3D scene.
+  const gl = drawingContext;
+  if (gl && gl.disable) gl.disable(gl.DEPTH_TEST);
+
+  // UI panel background.
   fill(255);
   stroke(0);
   strokeWeight(1);
   rect(10, 10, 220, 130);
 
   // Text
-  if (uiFont) {
-    textFont(uiFont);
-  }
+  textFont(uiFont || "sans-serif");
   fill(0);
   noStroke();
   textSize(16);
@@ -86,6 +120,8 @@ function drawControls() {
   text("Arrow Keys - Move selected", 20, 90);
   text("Drag - Rotate camera view", 20, 105);
 
+  if (gl && gl.enable) gl.enable(gl.DEPTH_TEST);
+
   pop();
 }
 
@@ -98,3 +134,55 @@ function mousePressed() {
     let mx = mouseX - width / 2;
     let my = mouseY - height / 2;
     let distance = dist(mx, my, g.x, g.y);
+
+    if (distance < g.size / 2) {
+      selected = g;
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    selected = null;
+    dragging = true;
+    startX = mouseX;
+    startY = mouseY;
+  }
+}
+
+function mouseDragged() {
+  if (dragging) {
+    let dx = mouseX - startX;
+    let dy = mouseY - startY;
+    cameraY += dx * 0.01;
+    cameraX += dy * 0.01;
+    startX = mouseX;
+    startY = mouseY;
+  }
+}
+
+function mouseReleased() {
+  dragging = false;
+}
+
+function keyPressed() {
+  if (key === "a" || key === "A") {
+    glasses.push({
+      x: random(-100, 100),
+      y: random(-100, 100),
+      z: random(-100, 100),
+      size: random(150, 250)
+    });
+  }
+
+  if (key === "r" || key === "R") {
+    if (glasses.length > 0) glasses.pop();
+  }
+
+  if (selected) {
+    if (keyCode === LEFT_ARROW) selected.x -= 10;
+    if (keyCode === RIGHT_ARROW) selected.x += 10;
+    if (keyCode === UP_ARROW) selected.y -= 10;
+    if (keyCode === DOWN_ARROW) selected.y += 10;
+  }
+}
