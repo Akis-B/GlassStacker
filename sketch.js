@@ -15,6 +15,10 @@ function preload() {
 function setup() {
   createCanvas(800, 600, WEBGL);
   
+  if (uiFont) {
+    textFont(uiFont);
+  }
+
   glasses.push({ x: 0, y: 0, z: 0, size: 200 });
   glasses.push({ x: 50, y: -30, z: 50, size: 180 });
   glasses.push({ x: -50, y: -60, z: -50, size: 220 });
@@ -40,16 +44,7 @@ function draw() {
   for (let i = 0; i < glasses.length; i++) {
     let g = glasses[i];
     push();
-    translate(g.x, g.y, g.z);
-
-    if (selected === g) {
-      stroke(255, 100, 0, 200);
-      strokeWeight(3);
-    } else {
-      stroke(64, 224, 208, 150);
-      strokeWeight(1);
-    }
-
+@@ -53,50 +57,53 @@ function draw() {
     fill(64, 224, 208, 60);
     box(g.size, 10, g.size);
     pop();
@@ -75,6 +70,9 @@ function drawControls() {
   rect(10, 10, 220, 130);
 
   // Text
+  if (uiFont) {
+    textFont(uiFont);
+  }
   fill(0);
   noStroke();
   textSize(16);
@@ -100,55 +98,3 @@ function mousePressed() {
     let mx = mouseX - width / 2;
     let my = mouseY - height / 2;
     let distance = dist(mx, my, g.x, g.y);
-
-    if (distance < g.size / 2) {
-      selected = g;
-      found = true;
-      break;
-    }
-  }
-
-  if (!found) {
-    selected = null;
-    dragging = true;
-    startX = mouseX;
-    startY = mouseY;
-  }
-}
-
-function mouseDragged() {
-  if (dragging) {
-    let dx = mouseX - startX;
-    let dy = mouseY - startY;
-    cameraY += dx * 0.01;
-    cameraX += dy * 0.01;
-    startX = mouseX;
-    startY = mouseY;
-  }
-}
-
-function mouseReleased() {
-  dragging = false;
-}
-
-function keyPressed() {
-  if (key === "a" || key === "A") {
-    glasses.push({
-      x: random(-100, 100),
-      y: random(-100, 100),
-      z: random(-100, 100),
-      size: random(150, 250)
-    });
-  }
-
-  if (key === "r" || key === "R") {
-    if (glasses.length > 0) glasses.pop();
-  }
-
-  if (selected) {
-    if (keyCode === LEFT_ARROW) selected.x -= 10;
-    if (keyCode === RIGHT_ARROW) selected.x += 10;
-    if (keyCode === UP_ARROW) selected.y -= 10;
-    if (keyCode === DOWN_ARROW) selected.y += 10;
-  }
-}
