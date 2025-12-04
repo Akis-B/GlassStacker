@@ -6,6 +6,12 @@ let startX = 0;
 let startY = 0;
 let dragging = false;
 
+let uiFont;
+
+function preload() {
+  uiFont = loadFont("https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/assets/Roboto-Regular.ttf");
+}
+
 function setup() {
   createCanvas(800, 600, WEBGL);
   
